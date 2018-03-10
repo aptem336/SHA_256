@@ -33,13 +33,35 @@ public class Hash {
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
     public static void main(String[] args) {
-        //Получаем байты из строки
-        byte[] bytes = buildBytes("".getBytes(StandardCharsets.UTF_8));
-        System.out.println("===========================================================================================================================================");
-        System.out.println("BYTES:\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t№");
-        System.out.println("===========================================================================================================================================");
-        printBytes(bytes);
+        calcHash(getTextBytes("3.141592653589793"));
+    }
+
+    private static byte[] getTextBytes(String text) {
+        return text.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static void calcHash(byte[] input) {
         System.out.println("");
+        System.out.println("===========================================================================================================================================");
+        System.out.println("Data:");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        System.out.println("HEX");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        for (int i = 0; i < bytes.length; i++) {
+            System.out.print(trimToLen(toHex(bytes[i] & 0xFF), 2) + ":");
+            if ((i + 1) % 4 == 0) {
+                System.out.println("");
+            }
+        }
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        System.out.println("BIN");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        for (int i = 0; i < bytes.length; i++) {
+            System.out.print(trimToLen(toBin(bytes[i] & 0xFF), 8) + " ");
+            if ((i + 1) % 4 == 0) {
+                System.out.println("");
+            }
+        }
         //Инициализируем необходимые регистры
         int[] reg = new int[8];
         System.arraycopy(H, 0, reg, 0, 8);
@@ -52,11 +74,6 @@ public class Hash {
             System.arraycopy(bytes, i * 64, bytes64, 0, 64);
             //Получаем слова
             int[] words = buildWords(bytes64);
-            System.out.println("==========================================================================");
-            System.out.println("WORDS:\t\t\t\t\t\t\t\t\t№");
-            System.out.println("==========================================================================");
-            printIntegers(words);
-            System.out.println("");
             //Итерации вычисления
             for (int j = 0; j < 64; j++) {
                 reg = iterate(reg, K[j], words[j]);
@@ -65,14 +82,22 @@ public class Hash {
                 hex[j] += reg[j];
             }
         }
-        System.out.println("====================================================================================================");
-        System.out.println("SHA-256:");
-        System.out.println("----------------------------------------------------------------------------------------------------");
-        System.out.println("HEX\t\t\t\t\tBIN");
-        System.out.println("====================================================================================================");
-        for (int i = 0; i < 8; i++) {
-            System.out.println(toHex(hex[i], 8) + "\t" + toBin(hex[i], 32));
+        System.out.println("===========================================================================================================================================");
+        System.out.println("Hash:");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        System.out.println("HEX");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        for (int i = 0; i < hex.length; i++) {
+            System.out.println(addDelimer(trimToLen(toHex(hex[i] & 0xFFFFFFFF), 8), 2, ":"));
         }
+        System.out.println("");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        System.out.println("BIN");
+        System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
+        for (int i = 0; i < hex.length; i++) {
+            System.out.println(addDelimer(trimToLen(toBin(hex[i] & 0xFFFFFFFF), 32), 8, " "));
+        }
+        System.out.println("===========================================================================================================================================");
     }
 
     private static int[] iterate(int[] reg, int k, int w) {
@@ -82,14 +107,14 @@ public class Hash {
         int choice = (reg[4] & reg[5]) ^ ((~reg[4]) & reg[6]);
         int temp1 = reg[7] + s1 + choice + k + w;
         int temp2 = s0 + majority;
-        reg[7] =    reg[6];
-        reg[6] = reg[5];
-        reg[5] = reg[4];
-        reg[4] = reg[3] + temp1;
-        reg[3] = reg[2];
-        reg[2] = reg[1];
-        reg[1] = reg[0];
-        reg[0] = temp1 + temp2;
+        reg[7] = reg[6];//h = g
+        reg[6] = reg[5];//g = f
+        reg[5] = reg[4];//f = e
+        reg[4] = reg[3] + temp1;//e = ...
+        reg[3] = reg[2];//d = c
+        reg[2] = reg[1];//c = b
+        reg[1] = reg[0];//b = a
+        reg[0] = temp1 + temp2;//a = ...
         return reg;
     }
 
@@ -128,39 +153,19 @@ public class Hash {
         return bytes;
     }
 
-    private static void printIntegers(int[] integers) {
-        for (int i = 0; i < integers.length; i++) {
-            System.out.println(toBin(integers[i], 32) + "\t" + i);
-        }
+    private static String toBin(int number) {
+        return Integer.toBinaryString(number);
     }
 
-    private static void printBytes(byte[] bytes) {
-        for (int i = 0; i < bytes.length; i++) {
-            System.out.print(toBin(bytes[i] & 0xFF, 8));
-            if ((i + 1) % 8 == 0) {
-                System.out.println("\t" + i);
-            }
-        }
+    private static String toHex(int number) {
+        return Integer.toHexString(number).toUpperCase();
     }
 
-    private static String toBin(int data, int len) {
-        return formatTo4(formatToLen(Integer.toBinaryString(data), len));
+    private static String addDelimer(String string, int position, String delimer) {
+        return string.replaceAll("(.{" + position + "})", "$1" + delimer);
     }
 
-    private static String toHex(int data, int len) {
-        return formatTo2(formatToLen(Integer.toHexString(data), len).toUpperCase());
-    }
-
-    private static String formatTo2(String string) {
-        return string.replaceAll("(.{2})", "$1\t");
-    }
-
-    private static String formatTo4(String string) {
-        return string.replaceAll("(.{4})", "$1\t");
-    }
-
-    private static String formatToLen(String string, int length) {
+    private static String trimToLen(String string, int length) {
         return String.format("%" + length + "s", string).replace(' ', '0');
     }
-
 }
