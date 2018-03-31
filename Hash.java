@@ -33,7 +33,7 @@ public class Hash {
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
     public static void main(String[] args) {
-        calcHash(getTextBytes("3.141592653589793"));
+        calcHash(buildBytes(getTextBytes("")));
     }
 
     private static byte[] getTextBytes(String text) {
